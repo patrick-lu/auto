@@ -8,3 +8,4 @@ autobt/autobt/spiders/*.pyc
 
 pub/pub/*.pyc
 pub/pub/spiders/*.pyc
+pub/pub/settings.py

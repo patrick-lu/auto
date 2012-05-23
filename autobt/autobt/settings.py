@@ -21,3 +21,4 @@ ITEM_PIPELINES = ['autobt.imagedown.MyImagePipeline',
 			]
 IMAGES_STORE = '../btimgs/'
 BTFILES_STORE = '../btfiles/'
+DB_NAME = 'autobt'

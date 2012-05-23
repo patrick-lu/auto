@@ -10,11 +10,12 @@ from pymongo import Connection
 import urlparse
 import datetime
 
+from autobt.utils import parse_bt
 
 from time import sleep
 
-class XiaavSpider(CrawlSpider):
-    name = 'xiaav'
+class CrawlSpider(CrawlSpider):
+    name = 'crawl'
     conn = Connection()
     db = conn.autobt
     threads_db = db.threads
@@ -52,7 +53,7 @@ class XiaavSpider(CrawlSpider):
                     "title":title,
 		    "tag": self.name,
 		    "grab_at":datetime.datetime.utcnow(),
-		    "completed":0,
+		    "grab_progress":"0",
                     "create_time":create_time}
                 self.threads_db.insert(post)
                 yield Request(absolute_link,callback=self.parse_thread)
@@ -67,11 +68,16 @@ class XiaavSpider(CrawlSpider):
         if(len(imgs)==0):
 	    self.threads_db.remove({"url":response.url})
             return;
+	links = content.select('.//a/@href').extract();
+        if(len(links)==0):
+	    self.threads_db.remove({"url":response.url})
+            return;
         #items = [];
         #for img in imgs:
         item = AutobtItem()
 	item['name'] = response.url
         item['image_urls'] = imgs 
+	item['links']=links
         #inspect_response(response)
 
 	all=content.extract();
@@ -105,7 +111,11 @@ class XiaavSpider(CrawlSpider):
 	tt["content"]=con;
 	tt['raw_content']=all;
 	self.threads_db.save(tt);
-        return item;
+	
+	if not item['links']:
+		return item
+        return parse_bt(item);
+
 
     def parse(self, response):
 	self.log('hi from %s'% response.url);

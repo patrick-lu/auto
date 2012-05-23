@@ -5,8 +5,10 @@ from autobt.items import AutobtItem
 from scrapy.shell import inspect_response
 from scrapy.http import FormRequest
 from scrapy.http import Request
-from autobt.items import AutobtItem
+from scrapy.conf import settings
 from pymongo import Connection
+from scrapy.conf import settings
+from pymongo.database import Database
 import urlparse
 import datetime
 
@@ -16,8 +18,9 @@ from time import sleep
 
 class CrawlSpider(CrawlSpider):
     name = 'crawl'
+    db_name=settings['DB_NAME']
     conn = Connection()
-    db = conn.autobt
+    db = Database(conn,db_name)
     threads_db = db.threads
 
     
@@ -53,7 +56,7 @@ class CrawlSpider(CrawlSpider):
                     "title":title,
 		    "tag": self.name,
 		    "grab_at":datetime.datetime.utcnow(),
-		    "completed":0,
+		    "grab_progress":"0",
                     "create_time":create_time}
                 self.threads_db.insert(post)
                 yield Request(absolute_link,callback=self.parse_thread)

@@ -68,7 +68,7 @@ class Sex8Spider(CrawlSpider):
                    		"title":title,
 		    		"tag": self.name,
 		    		"grab_at":datetime.datetime.utcnow(),
-		    		"completed":0,
+		    		"grab_progress":"0",
                     		"create_time":create_time}
                 	self.threads_db.insert(post)
                 	yield Request(absolute_link,callback=self.parse_thread)

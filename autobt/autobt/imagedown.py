@@ -1,5 +1,4 @@
 from scrapy.contrib.pipeline.images import ImagesPipeline
-from pymongo import Connection
 
 class MyImagePipeline(ImagesPipeline):
 

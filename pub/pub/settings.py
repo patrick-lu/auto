@@ -16,3 +16,7 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.7 (KHTML, like
 
 IMAGES_STORE = '../btimgs/'
 BTFILES_STORE = '../btfiles/'
+DB_NAME = 'autobt'
+
+adfly_name='lup2k@126.com'
+adfly_pass='DONTlook8240'
