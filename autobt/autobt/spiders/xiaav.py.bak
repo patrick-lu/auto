@@ -1,0 +1,51 @@
+from scrapy.selector import HtmlXPathSelector
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.contrib.spiders import CrawlSpider, Rule
+from autobt.items import AutobtItem
+from scrapy.shell import inspect_response
+from scrapy.http import FormRequest
+from scrapy.http import Request
+from autobt.items import AutobtItem
+
+class XiaavSpider(CrawlSpider):
+    name = 'xiaav'
+    #allowed_domains = ['www.google.com']
+    start_urls = [
+                     'http://108.170.27.83/forum.php',
+		     #'http://108.170.27.83/forum-2-1.html',
+		     #'http://108.170.27.83/forum-2-2.html',
+                 ]
+    parse_urls = [
+		     'http://108.170.27.83/forum-2-1.html',
+		     'http://108.170.27.83/forum-2-2.html',
+                      
+                 ]
+    parse_index = 0;
+
+    def parse_thread(self,response):
+        self.parse_index=self.parse_index+1
+        self.log("access url:%s"% response.url)
+
+        if(self.parse_index==len(self.parse_urls)):
+              return
+        self.log("login sucessfully")
+        return Request(self.parse_urls[self.parse_index],
+                                callback=self.parse_thread);
+
+    def parse(self, response):
+	self.log('hi from %s'% response.url);
+	return [FormRequest.from_response(response,
+                    formdata={'username': 'lupkkkk', 'password': 'DONTlook8240'},
+                    callback=self.after_login)]
+
+    def after_login(self, response):
+        # check login succeed before going on
+        #inspect_response(response)
+        if 'lupkkk' in response.body:
+             self.log("login sucessfully")
+             return Request(self.parse_urls[self.parse_index],
+                                callback=self.parse_thread);
+        else:
+             self.log("failed to login")
+        return
+

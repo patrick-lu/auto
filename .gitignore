@@ -1,0 +1,10 @@
+btfiles/
+btimgs/
+autobt/.scrapy/
+pub/.scrapy/
+
+autobt/autobt/*.pyc
+autobt/autobt/spiders/*.pyc
+
+pub/pub/*.pyc
+pub/pub/spiders/*.pyc
