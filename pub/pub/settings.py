@@ -20,3 +20,9 @@ DB_NAME = 'autobt'
 
 adfly_name='lup2k@126.com'
 adfly_pass='DONTlook8240'
+
+imageporter_name='lupkkk'
+imageporter_pass='DONTlook8240'
+
+shareimage_name='lupkkk'
+shareimage_pass='DONTlook8240'
