@@ -5,8 +5,10 @@ from autobt.items import AutobtItem
 from scrapy.shell import inspect_response
 from scrapy.http import FormRequest
 from scrapy.http import Request
+from scrapy.conf import settings
 from autobt.items import AutobtItem
 from pymongo import Connection
+from pymongo.database import Database
 import urlparse
 import datetime
 
@@ -15,8 +17,9 @@ from time import sleep
 
 class Sex8Spider(CrawlSpider):
     name = 'sex8'
+    db_name=settings['DB_NAME']
     conn = Connection()
-    db = conn.autobt
+    db = Database(conn,db_name)
     threads_db = db.threads
 
     
