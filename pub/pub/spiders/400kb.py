@@ -32,6 +32,9 @@ class DmozSpider(BaseSpider):
 	#threads_db = db.threads
 	#tt=threads_db.find_one();
 	self.tt=selectToPub();
+	if not self.tt or self.tt=="":
+		print "pub: 400k no item to publish"
+		return
 	for input in inputs:
 		type=input.select("./@type").extract()[0]
 		if type.find("hidden") > -1:
@@ -59,12 +62,50 @@ class DmozSpider(BaseSpider):
 	if not "publish" in self.tt:
 		self.tt["publish"]={}
 	self.tt["publish"]["btfile"]=match.group(0);
+	self.tt["pub_progress"]="1"
 		
 	#threads_db.save(tt)
 	saveItem(self.tt)
 	#inspect_response(response)
+	return self.adv_request();
+
+    def adv_request(self):
 	adv_link="http://adf.ly";
 	return Request(adv_link,callback=self.login)
+	#adv_link="http://www.linkbucks.com/Default.aspx"
+	#return Request(adv_link,callback=self.linkbucks_login)
+
+    def linkbucks_login(self, response):
+	name = settings["linkbucks_name"]
+	pw = settings["linkbucks_pass"]
+	return [FormRequest.from_response(response,
+                    formdata={'ctl00$LeftMenuBar$ctl00$Username': name, 'ctl00$LeftMenuBar$ctl00$Password': pw},
+                    callback=self.linkbucks_after_login)]
+
+    def linkbucks_after_login(self, response):
+	if(response.url.find("lup2k")>-1):
+		#inspect_response(response)
+		''' save to adf.ly'''
+		url = "http://www.linkbucks.com/CreateLinks/Single/"
+		return Request(url,callback=self.linkbucks_submit)
+	else:
+		self.log("ERROR: failed to login linkbucks")
+		return
+    def linkbucks_submit(self, response):
+	 return [FormRequest.from_response(response,
+                    formdata={'ctl00$MainBody$ctl02$txtOrgLink': self.tt["publish"]["btfile"],
+			'ctl00$MainBody$ctl02$drpContentType': '2',
+			'ctl00$MainBody$ctl02$drpAdType':'2',
+			'ctl00$MainBody$ctl02$drpAliasURL':'51',  #linkbabes.com 
+			},
+                    callback=self.linkbucks_get_short)]
+
+
+    def linkbucks_get_short(self, response):
+	inspect_response(response)
+	self.tt["publish"]["url"]=response.body;
+	
+    
 
     def login(self, response):
 	name = settings["adfly_name"]
@@ -76,6 +117,7 @@ class DmozSpider(BaseSpider):
     def after_login(self, response):
 	if(response.url.find("adf.ly/publisher")>-1):
 		#inspect_response(response)
+		''' save to adf.ly'''
 		url ="http://adf.ly/shrink.php?url="+self.tt["publish"]["btfile"]+"&x=0.5941863050684333&advert_type=1&custom_name=&logged=1&domain=1"
 		return Request(url,callback=self.get_short)
 	else:
@@ -83,14 +125,46 @@ class DmozSpider(BaseSpider):
 
 
     def get_short(self, response):
-	self.tt["publish"]["adv"]=response.body;
+	self.tt["publish"]["url"]=response.body;
 #	inspect_response(response)
 	saveItem(self.tt)
 	img_share_link = "http://www.imageporter.com/login.html"
 	#return Request(img_share_link,callback=self.imgShare_login)
 	#img_share_link = "http://shareimage.org/"
-	img_share_link = "http://shareimage.org/users.php?act=login&return=aHR0cDovL3NoYXJlaW1hZ2Uub3JnL3VzZXJzLnBocD9hY3Q9bG9nb3V0&lb_div=login_lightbox"
-	return Request(img_share_link,callback=self.shareimage_login)
+	'''shareimge worked, but now cant upload because of multi-files name'''
+	#img_share_link = "http://shareimage.org/users.php?act=login&return=aHR0cDovL3NoYXJlaW1hZ2Uub3JnL3VzZXJzLnBocD9hY3Q9bG9nb3V0&lb_div=login_lightbox"
+	#return Request(img_share_link,callback=self.shareimage_login)
+	lulzimg_link = "http://lulzimg.com"
+	return Request(lulzimg_link, callback = self.lulzimg_post)
+
+    def lulzimg_post(self, response):
+	basedir = settings['IMAGES_STORE']
+	params={}
+	params['uploadtype']='image'
+	params['submit']=''
+	self.tt['publish']['imgs']=[]
+	for img in self.tt['images']:
+		key=img[1]
+		path_comps= key.split('/')
+		filename=os.path.join(basedir, *path_comps)
+		print filename;
+		#inspect_response(response)
+		params['image']=open(filename,'rb')
+		datagen, headers = multipart_encode(params)
+		upload_url = "http://lulzimg.com/upload.php"
+		req = urllib2.Request(upload_url, datagen, headers)
+		result = urllib2.urlopen(req)
+		content=result.read()
+		#print content
+		p = re.compile(r'imagecode1(.)+value="(http://\S+)"')
+       		match=p.search(content);
+ 	        print match.group(2)
+        	if match:
+                	self.tt['publish']['imgs'].append(match.group(2))
+                	saveItem(self.tt)
+        	else:
+                	self.log("ERROR: failed to upload image")
+        return;
 
     def shareimage_login(self, response):
 	name = settings["shareimage_name"]
@@ -128,6 +202,8 @@ class DmozSpider(BaseSpider):
 	key=response.meta['key']
 	path_comps= key.split('/')
 	filename=os.path.join(basedir, *path_comps)
+	print filename;
+	inspect_response(response)
 	params["userfile[]"]=open(filename,"rb")
 	params["private_upload"]=0
 	datagen, headers = multipart_encode(params)
@@ -137,7 +213,9 @@ class DmozSpider(BaseSpider):
 	req.add_header('Cookie',response.meta['cookie'])
 	result = urllib2.urlopen(req)
 	content=result.read()
-	#print content
+	print content
+	response["meta"]['tttt']=content
+	inspect_response(response)
 	p = re.compile(r'value="(http://\S+)"')
 	match=p.search(content);
 	print match.group(1)

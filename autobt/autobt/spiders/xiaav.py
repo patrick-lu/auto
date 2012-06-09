@@ -5,19 +5,25 @@ from autobt.items import AutobtItem
 from scrapy.shell import inspect_response
 from scrapy.http import FormRequest
 from scrapy.http import Request
-from autobt.items import AutobtItem
+from scrapy.conf import settings
 from pymongo import Connection
+from scrapy.conf import settings
+from pymongo.database import Database
 import urlparse
 import datetime
 
 from autobt.utils import parse_bt
+from autobt.utils import parseDetailFromContent
+from autobt.utils import createNewThread
 
 from time import sleep
 
 class CrawlSpider(CrawlSpider):
-    name = 'crawl'
+    name = 'xiaav'
+    classify='1'
+    db_name=settings['DB_NAME']
     conn = Connection()
-    db = conn.autobt
+    db = Database(conn,db_name)
     threads_db = db.threads
 
     
@@ -47,15 +53,14 @@ class CrawlSpider(CrawlSpider):
             time=thread.select("td[normalize-space(@class)='by']");
             create_time=time[0].select('em/span/text()').extract()[0] 
             self.log("+++link:%s  time:%s"%(absolute_link,create_time));
-	    post = self.threads_db.find_one({"url":absolute_link})
-            if( not post):
-                post = {"url":absolute_link,
+            post = {"url":absolute_link,
                     "title":title,
 		    "tag": self.name,
+		    "classify":self.classify,
 		    "grab_at":datetime.datetime.utcnow(),
 		    "grab_progress":"0",
                     "create_time":create_time}
-                self.threads_db.insert(post)
+	    if createNewThread(post):
                 yield Request(absolute_link,callback=self.parse_thread)
         return ;
 
@@ -81,34 +86,11 @@ class CrawlSpider(CrawlSpider):
         #inspect_response(response)
 
 	all=content.extract();
-	con={"name":"","size":"","format":""}
-	colon =  u'\uff1a' 
-	tags={
-         u'\u5f71\u7247\u540d\u7a31':"name",
-         u'\u5f71\u7247\u540d\u79f0':"name",
-         u'\u5f71\u7247\u683c\u5f0f':"format",
-         u'\u5f71\u7247\u5927\u5c0f':"size",
-        }
-
-	for key in tags:
-		index =all.find(key);
-		if(index >0):
-			name =all[index:]
-			index = name.find("<br>") 
-			if(index <0 ):
-				index = name.find("\t")
-			if(index >0):
-				name = name[0:index]
-				index = name.find(colon)
-				if(index > 0):
-					con[tags[key]] = name[(index+1):]
-				else:
-					index = name.find(u":")
-					if(index>0):
-						con[tags[key]] = name[(index+1):]
+	
+	ret = parseDetailFromContent(all);
 
 	tt=self.threads_db.find_one({"url":response.url})
-	tt["content"]=con;
+	tt["content"]=ret;
 	tt['raw_content']=all;
 	self.threads_db.save(tt);
 	

@@ -22,3 +22,5 @@ ITEM_PIPELINES = ['autobt.imagedown.MyImagePipeline',
 IMAGES_STORE = '../btimgs/'
 BTFILES_STORE = '../btfiles/'
 DB_NAME = 'autobt'
+
+CONCURRENT_REQUESTS_PER_DOMAIN = 1

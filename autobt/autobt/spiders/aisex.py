@@ -15,11 +15,11 @@ import datetime
 from autobt.utils import parse_bt
 from autobt.utils import parseDetailFromContent
 from autobt.utils import createNewThread
-from autobt.utils import get_reply
 from time import sleep
 
 class CrawlSpider(CrawlSpider):
     name = 'aisex'
+    classify = '1'
     db_name=settings['DB_NAME']
     conn = Connection()
     db = Database(conn,db_name)
@@ -71,6 +71,7 @@ class CrawlSpider(CrawlSpider):
 		    		"tag": self.name,
 		    		"grab_at":datetime.datetime.utcnow(),
 		    		"grab_progress":"0",
+				"classify":self.classify,
                     		"create_time":create_time}
                 if createNewThread(post):
                 	yield Request(absolute_link,callback=self.parse_thread)
@@ -111,23 +112,8 @@ class CrawlSpider(CrawlSpider):
 	if not item['links']:
 		return item
 	
-        #return parse_bt(item);
-	reply=get_reply(response.url);
-        #inspect_response(response)
-	print reply;
-	reply=reply.encode('gbk')
-	req = FormRequest.from_response(response,
-		formdata={'atc_content':reply},
-		callback=self.reply_thread
-		)
-	req.meta['item']=item;
-	return req
+        return parse_bt(item);
 
-    def reply_thread(self,response):
-	#inspect_response(response)
-	item = response.meta["item"]
-	sleep(210)
-	return parse_bt(item)
 
     def parse(self, response):
 	self.log('hi from %s'% response.url);
@@ -139,9 +125,23 @@ class CrawlSpider(CrawlSpider):
     def after_login(self, response):
         # check login succeed before going on
         #inspect_response(response)
+	debug = 0;
         if 'lupkkk' in response.body:
-             self.log("login sucessfully")
-             for x in self.parse_urls:
+            self.log("login sucessfully")
+	    if settings['debug'] or debug:
+		self.log("enter debug mode. make sure that this link has been stored in db")
+		url = 'http://aisex.com/bt/htm_data/5/1206/530628.html'
+		post = {"url":url,
+                                "title":"test",
+                                "tag": self.name,
+                                "grab_at":datetime.datetime.utcnow(),
+                                "grab_progress":"0",
+                                "classify":self.classify,
+                                "create_time":'test'}
+                createNewThread(post)
+                yield Request(url,callback=self.parse_thread)
+		return
+            for x in self.parse_urls:
                  yield Request(x,callback=self.parse_threads)
              #return Request(self.parse_urls[self.parse_index],
               #                  callback=self.parse_thread);

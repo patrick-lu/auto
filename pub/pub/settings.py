@@ -21,8 +21,14 @@ DB_NAME = 'autobt'
 adfly_name='lup2k@126.com'
 adfly_pass='DONTlook8240'
 
+linkbucks_name='lup2k'
+linkbucks_pass='moneyM@n1y'
+
 imageporter_name='lupkkk'
 imageporter_pass='DONTlook8240'
 
 shareimage_name='lupkkk'
 shareimage_pass='DONTlook8240'
+
+imgchili_name='lupkkk'
+imgchili_pass='DONTlook8240'
