@@ -20,7 +20,7 @@ def getMsg():
 host="127.0.0.1"
 context = zmq.Context()
 socket = context.socket(zmq.REQ)
-socket.connect("tcp://"+host+":6300")
+socket.connect("tcp://"+host+":6100")
 
 system=context.socket(zmq.SUB)
 system.connect("tcp://"+host+":6666")
@@ -29,23 +29,25 @@ system.setsockopt(zmq.SUBSCRIBE, "system")
 system.setsockopt(zmq.SUBSCRIBE, "autobt")
 
 srv = context.socket(zmq.REP)
-srv.bind("tcp://"+host+":6301")
+srv.bind("tcp://"+host+":6101")
 
 poll = zmq.Poller()
 poll.register(srv, zmq.POLLIN)
 poll.register(system, zmq.POLLIN)
 
 
-status = {};
-def start(tag):
-	status[tag]['running'] = 1
-	print "start reply at "+tag;
+status = {'running':0};
+def start():
+	status['running'] = 1
+	print "start pub"
 	log = open('./log',"w")
-	app = subprocess.Popen(args='scrapy crawl '+tag, shell=True, stdout=subprocess.PIPE)
+	app = subprocess.Popen(args='scrapy crawl 400kb', shell=True, stdout=subprocess.PIPE)
 	app.wait()
 	log.write(app.stdout.read())
-	status[tag]['running'] = 0
-	print "finish reply at "+tag;
+	status['running'] = 0
+	print "finish pub";
+	msg={"cmd":"finish_pub"}
+	notify(msg)
 	log.close();
 
 def system_handler(msg):
@@ -53,14 +55,9 @@ def system_handler(msg):
 	print "cmd:"+cmd;
 	if(msg['cmd']=="ping"):
 		notify({"cmd":"pong"})
-	elif cmd == "start_reply":
-		tag = "aisex"
-		if (not (tag in status)) or status[tag]['running']==0:
-			if (not (tag in status)):
-				status[tag]={}
-			status[tag]['max']=2;
-			status[tag]['terminate']=0;
-			t=Thread(target=start,args=(tag,))
+	elif cmd == "start_pub":
+		if status['running']==0:
+			t=Thread(target=start)
 			t.start()
 		else:
 			print "has started "+tag
@@ -70,8 +67,8 @@ def system_handler(msg):
 def worker_handler(msg):
 	if(msg['cmd']=="max"):
 		srv.send(status[msg['tag']]['max'])
-	elif msg['cmd']=='terminate':
-		srv.send(status[msg['tag']]['terminate'])
+#	elif msg['cmd']=='terminate':
+#		srv.send(status[msg['tag']]['terminate'])
 		
 
 
@@ -86,6 +83,3 @@ while True:
 			msg = srv.recv_json()
 			worker_handler(msg)
 
-for i in range(10):
-	msg = "msg %s"%i
-	notify(msg)

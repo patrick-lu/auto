@@ -63,6 +63,7 @@ class DmozSpider(BaseSpider):
 		self.tt["publish"]={}
 	self.tt["publish"]["btfile"]=match.group(0);
 	self.tt["pub_progress"]="1"
+	self.tt["pub_time"]=int(time())
 		
 	#threads_db.save(tt)
 	saveItem(self.tt)
@@ -135,7 +136,7 @@ class DmozSpider(BaseSpider):
 	#img_share_link = "http://shareimage.org/users.php?act=login&return=aHR0cDovL3NoYXJlaW1hZ2Uub3JnL3VzZXJzLnBocD9hY3Q9bG9nb3V0&lb_div=login_lightbox"
 	#return Request(img_share_link,callback=self.shareimage_login)
 	lulzimg_link = "http://lulzimg.com"
-	return Request(lulzimg_link, callback = self.lulzimg_post)
+	return Request(lulzimg_link, callback = self.lulzimg_post,dont_filter=True)
 
     def lulzimg_post(self, response):
 	basedir = settings['IMAGES_STORE']
@@ -147,7 +148,7 @@ class DmozSpider(BaseSpider):
 		key=img[1]
 		path_comps= key.split('/')
 		filename=os.path.join(basedir, *path_comps)
-		print filename;
+		self.log( filename);
 		#inspect_response(response)
 		params['image']=open(filename,'rb')
 		datagen, headers = multipart_encode(params)
@@ -158,7 +159,7 @@ class DmozSpider(BaseSpider):
 		#print content
 		p = re.compile(r'imagecode1(.)+value="(http://\S+)"')
        		match=p.search(content);
- 	        print match.group(2)
+ 	        self.log( match.group(2))
         	if match:
                 	self.tt['publish']['imgs'].append(match.group(2))
                 	saveItem(self.tt)

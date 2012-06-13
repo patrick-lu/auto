@@ -6,6 +6,8 @@ from time import time
 import datetime
 from pymongo import Connection
 
+import pdb
+
 class info:
 	alive=0
 	running=0
@@ -41,6 +43,9 @@ pub_srv.bind("tcp://"+host+":6100")
 post_srv = context.socket(zmq.REP)
 post_srv.bind("tcp://"+host+":6200")
 
+web_srv = context.socket(zmq.REP)
+web_srv.bind("tcp://"+host+":6400")
+
 bc = context.socket(zmq.PUB)
 bc.bind("tcp://"+host+":6666")
 
@@ -49,6 +54,7 @@ poll.register(autobt_srv, zmq.POLLIN)
 poll.register(reply_srv, zmq.POLLIN)
 poll.register(pub_srv, zmq.POLLIN)
 poll.register(post_srv, zmq.POLLIN)
+poll.register(web_srv, zmq.POLLIN)
 
 status={};
 srv_status={};
@@ -60,8 +66,24 @@ srv_status={};
  status['tag']['autobt']['interval']
  status['tag']['autobt']['pri']=0
 '''
+urls_to_publish=[]
 def main():
 	print "main"
+
+def web_handler(m):
+	msg=json.loads(m)
+	print msg
+	ret=""
+	if msg['cmd'] == 'publish':
+		urls_to_publish.append(msg['url'])
+		out={'cmd':'start_pub'}
+		out=json.dumps(out)
+		out = "system "+out;
+                bc.send(out)
+		ret="finished"
+	else:
+		print 'unknown cmd'
+	return ret;
 
 def autobt_handler(m):
 	msg=json.loads(m)
@@ -79,13 +101,29 @@ def pub_handler(m):
 	elif msg['cmd']=='ask_pub':
 		#todo: select one based on records in database
 		#tag=choice(tags)
-		tag='aisex'
-		item=threads_db.find_one({'grab_progress':'1','images':{'$exists':True},'btfile':{'$exists':True},'publish':{'$exists':False},'tag':tag})
-		if item:
-			print ("publish %s"% item['url'])
-			ret=item['url']
-		else:
-			print "no item to publish, need to grab!!"		
+		print urls_to_publish
+		if len(urls_to_publish)>0 :
+			cc = urls_to_publish.pop()
+			print "ii"+cc
+			while cc:
+				item=threads_db.find_one({'url':cc})
+				pdb.set_trace()
+				if item and not ('publish' in item):		
+					ret=cc;
+					break;
+				if len(urls_to_publish)>0 :
+					cc = urls_to_publish.pop()
+				else:
+					cc = '';
+		print "ooo"+cc
+		if ret=="":
+			tag='aisex'
+			item=threads_db.find_one({'grab_progress':'1','images':{'$exists':True},'btfile':{'$exists':True},'publish':{'$exists':False},'tag':tag})
+			if item:
+				print ("publish %s"% item['url'])
+				ret=item['url']
+			else:
+				print "no item to publish, need to grab!!"		
 
 		
 
@@ -146,5 +184,12 @@ while True:
 			print "MSG:",msg
 			reply_srv.send(msg)
 			msg = "reply "+msg
+			bc.send(msg)
+	if web_srv in sockets:
+		if sockets[web_srv] == zmq.POLLIN:
+			msg = web_srv.recv()
+			ret=web_handler(msg)
+			web_srv.send(ret)
+			msg = "web "+msg
 			bc.send(msg)
 	main();
