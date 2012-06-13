@@ -18,25 +18,22 @@ from autobt.utils import createNewThread
 from time import sleep
 
 class CrawlSpider(CrawlSpider):
-    name = 'aisex'
-    classify = 'asia'
+    name = 'rarbg'
+    classify = 'west'
     db_name=settings['DB_NAME']
     conn = Connection()
     db = Database(conn,db_name)
     threads_db = db.threads
 
     
-    download_delay =8
-    randomize_download_delay=True;
+    #download_delay =8
+    #randomize_download_delay=True;
     #allowed_domains = ['www.google.com']
     start_urls = [
-                     'http://aisex.com/bt/login.php',
-		     #'http://108.170.27.83/forum-2-1.html',
-		     #'http://108.170.27.83/forum-2-2.html',
+                     'http://www.rarbg.com',
                  ]
     parse_urls = [
-		     'http://aisex.com/bt/thread.php?fid=16',
-		    # 'http://108.170.27.83/forum-2-2.html',
+		     'http://www.rarbg.com/torrents.php?category=4',
                       
                  ]
 
@@ -79,7 +76,7 @@ class CrawlSpider(CrawlSpider):
 
     def parse_thread(self,response):
         self.log("thread url:%s"% response.url)
-	#inspect_response(response)
+	inspect_response(response)
         hxs = HtmlXPathSelector(response)
         first_floor= hxs.select('//table[normalize-space(@cellpadding)="6"]')[0]
 	content=first_floor.select('./tr[1]/td')
@@ -117,10 +114,11 @@ class CrawlSpider(CrawlSpider):
 
     def parse(self, response):
 	self.log('hi from %s'% response.url);
-	#sleep(10)
-	return [FormRequest.from_response(response,
-                    formdata={'loginuser': 'lupkkkk', 'loginpwd': 'DONTlook8240','hideid':'0','cktime':'86400','jumpurl':'http://aisex.com/bt/index.php'},
-                    callback=self.after_login)]
+        for x in self.parse_urls:       #beause of no user account
+             yield Request(x,callback=self.parse_threads)
+	#return [FormRequest.from_response(response,
+        #            formdata={'loginuser': 'lupkkkk', 'loginpwd': 'DONTlook8240','hideid':'0','cktime':'86400','jumpurl':'http://aisex.com/bt/index.php'},
+        #            callback=self.after_login)]
 
     def after_login(self, response):
         # check login succeed before going on
