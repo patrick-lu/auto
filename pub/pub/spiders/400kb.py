@@ -13,6 +13,7 @@ from pymongo import Connection
 from pub.utils import selectToPub
 from pub.utils import saveItem
 import re
+from time import time
 
 class DmozSpider(BaseSpider):
     name = "400kb"

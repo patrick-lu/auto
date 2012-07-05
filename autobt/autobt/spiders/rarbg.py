@@ -26,8 +26,8 @@ class CrawlSpider(CrawlSpider):
     threads_db = db.threads
 
     
-    #download_delay =8
-    #randomize_download_delay=True;
+    download_delay =8
+    randomize_download_delay=True;
     #allowed_domains = ['www.google.com']
     start_urls = [
                      'http://www.rarbg.com',
@@ -41,56 +41,67 @@ class CrawlSpider(CrawlSpider):
         self.log("access url:%s"% response.url)
         hxs = HtmlXPathSelector(response)
 	#inspect_response(response)
-	block=hxs.select('//tr[normalize-space(@class)="head"]/../tr[normalize-space(@class)="cbg"]')
-	block_num=len(block)
-	threads=hxs.select('//tr[normalize-space(@class)="head"]/../tr')
+	threads=hxs.select('//tr[normalize-space(@class)="lista2"]')
 
         for thread in threads:
-	    cls=thread.select('./@class').extract()
-	    if(cls[0]=="cbg"):
-		block_num-=1;
-		continue
-	    if(block_num==0):
-		relative_link=thread.select('.//a[1]/@href').extract()
-		if relative_link :
-			relative_link=relative_link[0]
-		else:
-			self.log("ERR:%s"%thread.extract());
-			continue
-		absolute_link= urlparse.urljoin(response.url, relative_link.strip())
-		title = thread.select('.//a[1]/text()').extract()[0]
-		time=thread.select(".//td[normalize-space(@class)='smalltxt']")[0]
-		create_time= time.select('./text()').extract()[1]
+	    items=thread.select('./td')
+	    relative_link=items[1].select('./a/@href').extract()
+	    if relative_link :
+		relative_link=relative_link[0]
+	    else:
+		self.log("ERR:%s"%thread.extract());
 
-		self.log("+++link:%s  time:%s"%(absolute_link,create_time));
-                post = {"url":absolute_link,
+	    absolute_link= urlparse.urljoin(response.url, relative_link.strip())
+	    title=items[1].select('./a/text()').extract()[0]
+	    create_time = items[2].select('./text()').extract()[0]
+
+	    self.log("+++link:%s  time:%s"%(absolute_link,create_time));
+            post = {"url":absolute_link,
                     		"title":title,
 		    		"tag": self.name,
 		    		"grab_at":datetime.datetime.utcnow(),
 		    		"grab_progress":"0",
 				"classify":self.classify,
                     		"create_time":create_time}
-                if createNewThread(post):
-                	yield Request(absolute_link,callback=self.parse_thread)
+            if createNewThread(post):
+                yield Request(absolute_link,callback=self.parse_thread)
         return ;
 
     def parse_thread(self,response):
         self.log("thread url:%s"% response.url)
-	inspect_response(response)
+	#inspect_response(response)
         hxs = HtmlXPathSelector(response)
-        first_floor= hxs.select('//table[normalize-space(@cellpadding)="6"]')[0]
-	content=first_floor.select('./tr[1]/td')
+        first_floor= hxs.select('//table[normalize-space(@class)="lista"]')[0]
+	content=first_floor.select('./tr')
 
-        imgs=content.select('.//img/@src').extract();
+	links = [];
+	imgs = [];
+	desc="";
+	size=''
+	for item in content:
+		if (item.select("./td/text()").extract()[0].find('Torrent') > -1):
+			bt_url = item.select("./td[2]/a/@href").extract()[0]
+	    		#link= urlparse.urljoin(response.url, bt_url.strip())
+			links.append(bt_url)
+		elif(item.select("./td/text()").extract()[0].find('Poster') > -1):
+			imgurl = item.select("./td[2]/img/@src").extract()[0]
+			imgs.append(imgurl)
+		elif(item.select("./td/text()").extract()[0].find('Description') > -1):
+			imgurl = item.select("./td[2]//img/@src").extract()[0]
+			imgs.append(imgurl)
+			cc = item.select("./td[2]/text()").extract();
+			for i in range(0,len(cc)-1):
+				desc=desc+cc[i];
+		elif(item.select("./td/text()").extract()[0].find('Size') > -1):
+			size = item.select("./td[2]/text()").extract()[0]
+			
+
         if(len(imgs)==0):
 	    self.threads_db.remove({"url":response.url})
             return;
-	links = content.select('.//a/@href').extract();
         if(len(links)==0):
 	    self.threads_db.remove({"url":response.url})
             return;
-        #items = [];
-        #for img in imgs:
         item = AutobtItem()
 	item['name'] = response.url
         item['image_urls'] = imgs 
@@ -99,9 +110,14 @@ class CrawlSpider(CrawlSpider):
 
 	all=content.extract()[0];
 
-	ret = parseDetailFromContent(all);
+	#ret = parseDetailFromContent(all);
+	con={};
+	con['size']=size;
+	con['desc']=desc
 
 	tt=self.threads_db.find_one({"url":response.url})
+	con['name']=tt['title']
+	ret={'level':len(con),"items":con}
 	tt["content"]=ret;
 	tt['raw_content']=all;
 	self.threads_db.save(tt);

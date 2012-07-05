@@ -49,10 +49,12 @@ class BTPipeline(MediaPipeline):
                     % (request, referer), level=log.WARNING, spider=info.spider)
 			raise FileException
 	
-		p=re.compile(r'filename=\S+\.((\w|\d)+)')
+		p=re.compile(r'filename=.+\.((\w|\d)+)')
 		header=  response.headers['Content-Disposition'];
+		print "download bt file"
+		print header
 		header = ''.join(header)
-		suffix="";
+		suffix="torrent";
 		match = p.search(header)
 		if match:
 			suffix=match.group(1)
@@ -93,6 +95,10 @@ class BTPipeline(MediaPipeline):
                                         )
 				req.meta['item']=item
 				return [req]
+			elif item['attach'][0]=='get':
+				req = Request(item['attach'][1])
+				req.meta['item']=item
+				return[req]
 			#	yield Request(link)
 		return;
 

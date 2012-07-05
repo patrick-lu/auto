@@ -1,0 +1,20 @@
+div.navbar.navbar-fixed-top
+    div.navbar-inner
+        div.container
+            div.nav-collapse.collapse
+                ul.nav
+                    li.active.grab_menu
+                        a(onclick="change_view('grab')") grab
+                    li.pub_menu
+                        a(onclick="change_view('pub')") pub
+div.container.grab
+    ul.thumbnails
+    div
+       button.btn.btn-info.grab_more more
+div(style="display: none").container.pub
+    ul.thumbnails
+    div
+       button.btn.btn-info.pub_more more
+script
+    get_grab();
+    get_pub();

@@ -107,7 +107,7 @@ def pub_handler(m):
 			print "ii"+cc
 			while cc:
 				item=threads_db.find_one({'url':cc})
-				pdb.set_trace()
+				#pdb.set_trace()
 				if item and not ('publish' in item):		
 					ret=cc;
 					break;

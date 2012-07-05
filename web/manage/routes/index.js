@@ -21,7 +21,7 @@ exports.grab = function(req, res){
   var db = new Db('autobt', server);
 
   db.open(function(err, db) {
-	con={'publish':{$exists:false}}
+	con={'publish':{$exists:false},'grab_progress':'1'}
     if(!err) {
 	db.collection('threads', function(err, collection) {
 		collection.find(con).skip(start).sort( { grab_time : -1 } ).limit(limit).toArray(function(err,items){
@@ -36,7 +36,6 @@ exports.grab = function(req, res){
 			  is_end:is_end,
 			  data:items
 			}
-			console.log("iii")
 			console.log(out)
 			res.end(JSON.stringify(out));
 		}else{
@@ -104,10 +103,7 @@ exports.pub = function(req, res){
                           is_end:is_end,
                           data:items
                         }
-			console.log(len)
-			console.log(start)
-			console.log("ooo")
-			console.log(out)
+			//console.log(out)
                         res.end(JSON.stringify(out));
                 }else{
                         var out={result:0,error:'empty'}

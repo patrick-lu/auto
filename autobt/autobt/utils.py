@@ -76,6 +76,11 @@ def parse_bt(item):
 				request = Request(next_link,callback=parse_bt_cb)
 				request.meta['item'] = item;
 				return request;
+	for link in item['links']:
+		if link[0]=='/':
+			absolute_link= urlparse.urljoin(item['name'], link.strip())
+			item['attach']=["get",absolute_link,'']
+			return item;
 	print "ERROR no bt download found"
 	return item;
 	
